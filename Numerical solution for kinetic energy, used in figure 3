@@ -1,0 +1,77 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+#function to update position and velocity after a time step
+def upd_pos_vel(pos, vel, acc, time_step):
+    newpos = pos + vel*time_step + 0.5*acc*time_step**2
+    newvel = vel + acc*time_step
+
+    return newpos, newvel
+
+#runs the simulation over N time steps
+def simulation(N, time_step, phase,E0):
+    t = 0
+    pos = 0
+    vel = 0
+    
+    R_pos = [0]
+    R_vel = [0]
+    
+    for i in range(10000):
+        t += time_step
+        acc = E0*A*np.cos(w*t+phase)
+        pos, vel = upd_pos_vel(pos, vel, acc, time_step)
+   
+        R_pos.append(pos)
+        R_vel.append(vel)
+        if R_pos[i]*R_pos[i-1] < 0: #checks if electron returns to origin
+            return R_pos, R_vel     #returns all positions and velocities if true
+    return [], []                   #returns empty arrays if electron does not return
+
+#setting parameters
+E0 = [4.67e10, 5.35e10 ,7.01e10]                              #electric field strength
+I = [ '2.9 $10^{14}$ ', '3.8 $10^{14}$ ', '6.6 $10^{14}$ ']   #laser intensity used for legend
+e=1.6e-19                                                     #electron charge
+m=9.1e-31                                                     #electron charge
+w =  2.69928e15 #3.75e14*(2*np.pi)                            #angular frequency
+time_step = 1e-18                                             #time step
+
+A=e/m
+
+N = 1000                                                      #number of time steps
+M = 500                                                       #number of phase steps
+
+plt.figure(0)
+#plotting line representing ionisation enrgy
+plt.plot([0,1.57], [54.418, 54.418], 'r', linestyle= 'dashed', label='Energy for Second ionisatioon')
+
+
+#running simulation over each electric field strength
+for j in range(len(E0)):
+    phase_range = np.linspace(0, np.pi/2, M)                  #array of phase steps
+    final_vel = np.zeros(M)                                   #array to record velocity on return
+    #running over each phase
+    for i in range(M):
+        #running simulation
+        R_pos, R_vel= simulation(N, time_step, phase_range[i], E0[j])
+        if len(R_vel) == 0:  #checking if return velocity vetory if empty or not/did not return to origin or did
+            pass  #passes if electron did not return
+        else:
+            final_vel[i] = R_vel[-1]  #record final velocity if electron returns
+
+    kinetic = np.zeros(M)                                     #array to record kinetic energies
+    for i in range(M):
+        kinetic[i] = 0.5*m*final_vel[i]**2/(1.6e-19)          #calculating kinetic energy
+
+    plt.figure(0)
+    plt.plot(phase_range,kinetic,label = 'Intensity: '+str(I[j])+' Vcm^-2')  #plots kinetic energy vs phase
+    
+    max_index = np.argmax(kinetic)  #finds index of highest kinetic energy
+    print('phase of highest energy: ' + str(phase_range[max_index]))   #prints phase of highest kinetic energy 
+
+#label plot
+plt.figure(0)
+plt.xlabel('Phase (radians)')
+plt.ylabel('Kinetic (eV)')
+plt.legend(fontsize="8", loc='upper right')
